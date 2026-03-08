@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Scanner Pro</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script>
+        const e = React.createElement;
+        
+        function CarScannerDashboard() {
+            const [vehicles, setVehicles] = React.useState([]);
+            const [stats, setStats] = React.useState(null);
+            const [loading, setLoading] = React.useState(true);
+            const [filter, setFilter] = React.useState('all');
+            const [searchTerm, setSearchTerm] = React.useState('');
+            
+            const BACKEND_URL = 'https://58b8bf13-f744-43b1-9853-e9b0085a37f3-00-17alqxf50v7s7.picard.replit.dev';
+
+            React.useEffect(() => {
+                const fetchData = async () => {
+                    try {
+                        setLoading(true);
+                        const vehiclesRes = await fetch(`${BACKEND_URL}/api/vehicles`);
+                        const vehiclesData = await vehiclesRes.json();
+                        const statsRes = await fetch(`${BACKEND_URL}/api/statistics`);
+                        const statsData = await statsRes.json();
+                        
+                        if (vehiclesData.success) setVehicles(vehiclesData.vehicles);
+                        if (statsData.success) setStats(statsData);
+                    } catch (error) {
+                        console.error('Error:', error);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+
+                fetchData();
+                const interval = setInterval(fetchData, 300000);
+                return () => clearInterval(interval);
+            }, []);
+
+            let filteredVehicles = vehicles;
+            if (filter !== 'all') {
+                filteredVehicles = filteredVehicles.filter(v => v.source === filter);
+            }
+            if (searchTerm) {
+                filteredVehicles = filteredVehicles.filter(v => 
+                    v.title.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+            }
+
+            const formatCurrency = (amount) => {
+                return `£${amount?.toLocaleString('en-GB', { maximumFractionDigits: 0 }) || 'N/A'}`;
+            };
+
+            const getProfitColor = (margin) => {
+                if (!margin) return 'text-gray-500';
+                if (margin > 15) return 'text-green-600';
+                if (margin > 5) return 'text-blue-600';
+                return 'text-orange-600';
+            };
+
+            if (loading && !vehicles.length) {
+                return e('div', { className: 'flex items-center justify-center h-screen bg-gray-50' },
+                    e('p', { className: 'text-gray-600' }, 'Loading...')
+                );
+            }
+
+            return e('div', { className: 'min-h-screen bg-gray-50' },
+                e('header', { className: 'bg-white shadow' },
+                    e('div', { className: 'max-w-7xl mx-auto px-6 py-4' },
+                        e('h1', { className: 'text-2xl font-bold text-gray-900' }, 'Car Scanner Pro')
+                    )
+                ),
+
+                stats && e('div', { className: 'max-w-7xl mx-auto px-6 py-8' },
+                    e('div', { className: 'grid grid-cols-4 gap-4 mb-8' },
+                        e('div', { className: 'bg-white rounded p-6 shadow' },
+                            e('p', { className: 'text-gray-600 text-sm' }, 'Total Vehicles'),
+                            e('p', { className: 'text-3xl font-bold' }, stats.total_vehicles)
+                        ),
+                        e('div', { className: 'bg-white rounded p-6 shadow' },
+                            e('p', { className: 'text-gray-600 text-sm' }, 'Added Today'),
+                            e('p', { className: 'text-3xl font-bold' }, stats.added_today)
+                        ),
+                        e('div', { className: 'bg-white rounded p-6 shadow' },
+                            e('p', { className: 'text-gray-600 text-sm' }, 'Avg Profit'),
+                            e('p', { className: 'text-3xl font-bold' }, stats.average_profit_margin?.toFixed(1) + '%')
+                        ),
+                        e('div', { className: 'bg-white rounded p-6 shadow' },
+                            e('p', { className: 'text-gray-600 text-sm' }, 'Sources'),
+                            e('p', { className: 'text-3xl font-bold' }, Object.keys(stats.by_source || {}).length)
+                        )
+                    )
+                ),
+
+                e('div', { className: 'max-w-7xl mx-auto px-6 mb-8' },
+                    e('div', { className: 'bg-white rounded shadow p-4' },
+                        e('div', { className: 'grid grid-cols-3 gap-4' },
+                            e('input', {
+                                type: 'text',
+                                placeholder: 'Search...',
+                                value: searchTerm,
+                                onChange: (evt) => setSearchTerm(evt.target.value),
+                                className: 'px-4 py-2 border rounded'
+                            }),
+                            e('select', {
+                                value: filter,
+                                onChange: (evt) => setFilter(evt.target.value),
+                                className: 'px-4 py-2 border rounded'
+                            },
+                                e('option', { value: 'all' }, 'All Sources'),
+                                e('option', { value: 'AutoTrader' }, 'AutoTrader'),
+                                e('option', { value: 'CarGurus' }, 'CarGurus'),
+                                e('option', { value: 'PistonHeads' }, 'PistonHeads'),
+                                e('option', { value: 'Car and Classic' }, 'Car and Classic')
+                            ),
+                            e('button', {
+                                onClick: () => window.location.reload(),
+                                className: 'px-4 py-2 bg-blue-600 text-white rounded'
+                            }, 'Refresh')
+                        )
+                    )
+                ),
+
+                e('div', { className: 'max-w-7xl mx-auto px-6 pb-12' },
+                    filteredVehicles.length === 0 ?
+                        e('div', { className: 'bg-white rounded shadow p-8 text-center' },
+                            e('p', { className: 'text-gray-500' }, 'No vehicles yet. Waiting for scan...')
+                        )
+                        :
+                        e('div', { className: 'space-y-4' },
+                            filteredVehicles.map((vehicle) =>
+                                e('div', { key: vehicle.id, className: 'bg-white rounded shadow p-6' },
+                                    e('div', { className: 'grid grid-cols-3 gap-6' },
+                                        e('div', {},
+                                            e('h3', { className: 'text-lg font-bold mb-2' }, vehicle.title),
+                                            e('p', { className: 'text-gray-600 text-sm mb-1' }, (vehicle.mileage?.toLocaleString() || 0) + ' miles'),
+                                            e('p', { className: 'text-gray-600 text-sm mb-4' }, vehicle.year),
+                                            e('div', { className: 'bg-blue-50 p-3 rounded mb-4' },
+                                                e('p', { className: 'text-xs text-gray-600' }, 'Price'),
+                                                e('p', { className: 'text-2xl font-bold text-blue-600' }, formatCurrency(vehicle.advertised_price))
+                                            ),
+                                            e('a', {
+                                                href: vehicle.advert_link,
+                                                target: '_blank',
+                                                rel: 'noopener noreferrer',
+                                                className: 'w-full px-4 py-2 bg-blue-600 text-white rounded text-center text-sm block'
+                                            }, 'View Listing →')
+                                        ),
+                                        e('div', { className: 'col-span-2 border-l pl-6' },
+                                            e('h4', { className: 'font-bold mb-4' }, 'Market Analysis'),
+                                            e('div', { className: 'grid grid-cols-2 gap-4' },
+                                                e('div', { className: 'bg-green-50 p-4 rounded border border-green-200' },
+                                                    e('p', { className: 'text-xs text-green-700 mb-1' }, 'Est. Retail'),
+                                                    e('p', { className: 'text-2xl font-bold text-green-900' }, vehicle.estimated_retail ? formatCurrency(vehicle.estimated_retail) : 'N/A')
+                                                ),
+                                                e('div', { 
+                                                    className: `p-4 rounded border ${
+                                                        vehicle.profit_margin > 15 ? 'bg-green-50 border-green-200' :
+                                                        vehicle.profit_margin > 5 ? 'bg-blue-50 border-blue-200' :
+                                                        'bg-orange-50 border-orange-200'
+                                                    }`
+                                                },
+                                                    e('p', { className: `text-xs mb-1 ${getProfitColor(vehicle.profit_margin)}` }, 'Profit Margin'),
+                                                    e('p', { className: `text-2xl font-bold ${getProfitColor(vehicle.profit_margin)}` }, vehicle.profit_margin !== null ? vehicle.profit_margin.toFixed(1) + '%' : 'N/A')
+                                                ),
+                                                e('div', { className: 'bg-purple-50 p-4 rounded border border-purple-200' },
+                                                    e('p', { className: 'text-xs text-purple-700 mb-1' }, 'Avg Days to Sell'),
+                                                    e('p', { className: 'text-2xl font-bold text-purple-900' }, vehicle.days_to_sell || 'N/A')
+                                                ),
+                                                e('div', { className: 'bg-gray-100 p-4 rounded' },
+                                                    e('p', { className: 'text-xs text-gray-700 mb-1' }, 'Market Demand'),
+                                                    e('p', { className: 'font-bold text-sm' }, vehicle.market_rating || 'Standard')
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                )
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(CarScannerDashboard));
+    </script>
+</body>
+</html>
