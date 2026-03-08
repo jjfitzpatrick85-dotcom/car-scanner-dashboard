@@ -5,42 +5,60 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-    <div id="app"></div>
+    <div id="app" class="p-6"></div>
     
     <script>
-        const API_URL = 'https://58b8bf13-f744-43b1-9853-e9b0085a37f3-00-17alqxf50v7s7.picard.replit.dev';
+        const API_URL = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://58b8bf13-f744-43b1-9853-e9b0085a37f3-00-17alqxf50v7s7.picard.replit.dev');
         
         async function loadVehicles() {
             try {
-                const response = await fetch(API_URL + '/api/vehicles');
+                const response = await fetch(API_URL + '%2Fapi%2Fvehicles');
                 const data = await response.json();
+                const vehicles = JSON.parse(data.contents);
                 
-                if (data.success) {
-                    displayVehicles(data.vehicles);
+                if (vehicles.success) {
+                    displayVehicles(vehicles.vehicles);
                 } else {
-                    document.getElementById('app').innerHTML = '<p>Error loading vehicles</p>';
+                    document.getElementById('app').innerHTML = '<p>Error: ' + vehicles.error + '</p>';
                 }
             } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('app').innerHTML = '<p>Connection error</p>';
+                document.getElementById('app').innerHTML = '<p>⚠️ Connection Error: Backend may be offline</p><p style="font-size: 12px; color: gray;">Try refreshing in a moment</p>';
             }
         }
         
         function displayVehicles(vehicles) {
             const html = `
-                <div class="max-w-7xl mx-auto p-6">
-                    <h1 class="text-3xl font-bold mb-6">Car Scanner Pro</h1>
-                    <p class="mb-6">Total Vehicles: <strong>${vehicles.length}</strong></p>
-                    ${vehicles.map(v => `
-                        <div class="bg-white p-6 rounded shadow mb-4">
-                            <h3 class="text-xl font-bold">${v.title}</h3>
-                            <p>Price: £${v.advertised_price}</p>
-                            <p>Mileage: ${v.mileage} miles</p>
-                            <p>Year: ${v.year}</p>
-                            <p>Source: ${v.source}</p>
-                            <p>Est Retail: £${v.estimated_retail}</p>
-                            <p>Profit Margin: ${v.profit_margin ? v.profit_margin.toFixed(1) + '%' : 'N/A'}</p>
-                            <p>Days to Sell: ${v.days_to_sell}</p>
+                <div class="max-w-7xl mx-auto">
+                    <h1 class="text-4xl font-bold mb-2">Car Scanner Pro</h1>
+                    <p class="text-gray-600 mb-6">Found <strong>${vehicles.length}</strong> vehicles</p>
+                    
+                    <div class="grid grid-cols-4 gap-4 mb-8">
+                        <div class="bg-blue-50 p-4 rounded">
+                            <p class="text-sm text-gray-600">Total Vehicles</p>
+                            <p class="text-3xl font-bold">${vehicles.length}</p>
+                        </div>
+                    </div>
+                    
+                    ${vehicles.map((v, i) => `
+                        <div class="bg-white p-6 rounded shadow mb-4 border-l-4 border-blue-600">
+                            <div class="grid grid-cols-3 gap-6">
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-900">${v.title}</h3>
+                                    <p class="text-sm text-gray-600 mt-2">📍 ${v.source}</p>
+                                    <p class="text-sm text-gray-600">🚗 ${v.mileage?.toLocaleString() || 0} miles</p>
+                                    <p class="text-sm text-gray-600">📅 ${v.year}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 mb-1">ADVERTISED PRICE</p>
+                                    <p class="text-3xl font-bold text-blue-600">£${(v.advertised_price || 0).toLocaleString()}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 mb-1">EST. RETAIL PRICE</p>
+                                    <p class="text-2xl font-bold text-green-600">£${(v.estimated_retail || 0).toLocaleString()}</p>
+                                    <p class="text-xs text-gray-500 mt-2">PROFIT MARGIN</p>
+                                    <p class="text-2xl font-bold ${v.profit_margin > 10 ? 'text-green-600' : 'text-orange-600'}">${v.profit_margin ? v.profit_margin.toFixed(1) + '%' : 'N/A'}</p>
+                                </div>
+                            </div>
                         </div>
                     `).join('')}
                 </div>
