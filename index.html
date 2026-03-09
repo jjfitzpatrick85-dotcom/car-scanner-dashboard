@@ -1,66 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Car Scanner Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root" class="p-6"></div>
     <script>
-        const BACKEND_URL = 'https://58b8bf13-f744-43b1-9853-e9b0085a37f3-00-17alqxf50v7s7.picard.replit.dev/api/vehicles';
-        
-        async function fetchVehicles() {
-            try {
-                const response = await fetch(BACKEND_URL);
-                const data = await response.json();
-                
-                if (data.success) {
-                    displayVehicles(data.vehicles);
-                } else {
-                    document.getElementById('root').innerHTML = '<div class="p-6"><p>No vehicles found</p></div>';
+        fetch('https://58b8bf13-f744-43b1-9853-e9b0085a37f3-00-17alqxf50v7s7.picard.replit.dev/api/vehicles')
+            .then(r => r.json())
+            .then(data => {
+                if(data.success && data.vehicles) {
+                    let html = '<div class="max-w-7xl mx-auto"><h1 class="text-4xl font-bold mb-6">Car Scanner Pro</h1><p class="mb-6">Found ' + data.vehicles.length + ' vehicles</p>';
+                    data.vehicles.forEach(v => {
+                        html += '<div class="bg-white p-6 rounded shadow mb-4"><h3 class="text-xl font-bold">' + v.title + '</h3><p>£' + v.advertised_price + ' | ' + v.mileage + ' miles | ' + v.source + '</p><p>Est: £' + v.estimated_retail + ' | Profit: ' + (v.profit_margin ? v.profit_margin.toFixed(1) + '%' : 'N/A') + '</p></div>';
+                    });
+                    html += '</div>';
+                    document.getElementById('root').innerHTML = html;
                 }
-            } catch (error) {
-                console.log('Trying proxy...');
-                tryProxy();
-            }
-        }
-        
-        async function tryProxy() {
-            try {
-                const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(BACKEND_URL);
-                const response = await fetch(proxyUrl);
-                const data = await response.json();
-                const vehicles = JSON.parse(data.contents);
-                
-                if (vehicles.success) {
-                    displayVehicles(vehicles.vehicles);
-                }
-            } catch (e) {
-                document.getElementById('root').innerHTML = '<div class="p-6"><p>Backend offline</p></div>';
-            }
-        }
-        
-        function displayVehicles(vehicles) {
-            let html = '<div class="max-w-7xl mx-auto p-6"><h1 class="text-4xl font-bold mb-6">Car Scanner Pro</h1>';
-            html += '<p class="mb-6 text-lg">Found <strong>' + vehicles.length + '</strong> vehicles</p>';
-            
-            vehicles.forEach(v => {
-                html += '<div class="bg-white p-6 rounded shadow mb-4 border-l-4 border-blue-600">';
-                html += '<h3 class="text-xl font-bold">' + v.title + '</h3>';
-                html += '<div class="grid grid-cols-3 gap-6 mt-4">';
-                html += '<div><p class="text-sm text-gray-600">Source: ' + v.source + '</p><p class="text-sm text-gray-600">Mileage: ' + (v.mileage || 0).toLocaleString() + '</p><p class="text-sm text-gray-600">Year: ' + v.year + '</p></div>';
-                html += '<div><p class="text-xs text-gray-500">ADVERTISED PRICE</p><p class="text-2xl font-bold text-blue-600">£' + (v.advertised_price || 0).toLocaleString() + '</p></div>';
-                html += '<div><p class="text-xs text-gray-500">EST RETAIL</p><p class="text-2xl font-bold text-green-600">£' + (v.estimated_retail || 0).toLocaleString() + '</p><p class="text-xs text-gray-500 mt-2">PROFIT MARGIN</p><p class="text-2xl font-bold ' + (v.profit_margin > 10 ? 'text-green-600' : 'text-orange-600') + '">' + (v.profit_margin ? v.profit_margin.toFixed(1) + '%' : 'N/A') + '</p></div>';
-                html += '</div></div>';
-            });
-            
-            html += '</div>';
-            document.getElementById('root').innerHTML = html;
-        }
-        
-        fetchVehicles();
+            })
+            .catch(e => document.getElementById('root').innerHTML = '<p>Connection error</p>');
     </script>
 </body>
 </html>
