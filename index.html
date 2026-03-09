@@ -5,132 +5,50 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-    <div id="app" class="p-6 bg-gray-50 min-h-screen"></div>
+    <div id="app"></div>
     
     <script>
-        const BACKEND = 'https://58b8bf13-f744-43b1-9853-e9b0085a37f3-00-17alqxf50v7s7.picard.replit.dev';
+        const API_URL = 'https://58b8bf13-f744-43b1-9853-e9b0085a37f3-00-17alqxf50v7s7.picard.replit.dev/';
         
         async function loadVehicles() {
-            document.getElementById('app').innerHTML = '<p class="text-center text-gray-500 py-12">Loading vehicles...</p>';
-            
             try {
-                // Try direct fetch first
-                const response = await fetch(BACKEND + '/api/vehicles', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
-                
-                if (!response.ok) throw new Error('Backend returned ' + response.status);
-                
+                const response = await fetch(API_URL + 'api/vehicles');
                 const data = await response.json();
                 
-                if (data.success && data.vehicles) {
+                if (data.success) {
                     displayVehicles(data.vehicles);
                 } else {
-                    document.getElementById('app').innerHTML = '<p class="text-red-600">Error: Invalid response from backend</p>';
+                    document.getElementById('app').innerHTML = '<p>Error loading vehicles</p>';
                 }
             } catch (error) {
                 console.error('Error:', error);
-                
-                // Fallback: try proxy service
-                try {
-                    const proxyUrl = 'https://cors-anywhere.herokuapp.com/' + BACKEND + '/api/vehicles';
-                    const response = await fetch(proxyUrl);
-                    const data = await response.json();
-                    
-                    if (data.success && data.vehicles) {
-                        displayVehicles(data.vehicles);
-                    } else {
-                        showError();
-                    }
-                } catch (error2) {
-                    showError();
-                }
+                document.getElementById('app').innerHTML = '<p>Connection error</p>';
             }
-        }
-        
-        function showError() {
-            document.getElementById('app').innerHTML = `
-                <div class="max-w-md mx-auto bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
-                    <p class="font-bold text-yellow-800">⚠️ Backend Offline</p>
-                    <p class="text-sm text-yellow-700 mt-2">The scanning backend is temporarily unavailable.</p>
-                    <p class="text-sm text-yellow-700 mt-1">This usually happens if:</p>
-                    <ul class="text-sm text-yellow-700 mt-2 list-disc list-inside">
-                        <li>Replit backend went to sleep (free tier)</li>
-                        <li>Network connection issue</li>
-                    </ul>
-                    <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-yellow-600 text-white rounded text-sm">
-                        Try Again
-                    </button>
-                </div>
-            `;
         }
         
         function displayVehicles(vehicles) {
             const html = `
-                <div class="max-w-6xl mx-auto">
-                    <div class="mb-8">
-                        <h1 class="text-4xl font-bold text-gray-900">Car Scanner Pro</h1>
-                        <p class="text-lg text-gray-600 mt-2">Found <strong>${vehicles.length}</strong> high-value vehicles</p>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                        <div class="bg-white p-6 rounded shadow">
-                            <p class="text-sm text-gray-600 font-medium">TOTAL VEHICLES</p>
-                            <p class="text-4xl font-bold text-blue-600 mt-2">${vehicles.length}</p>
+                <div class="max-w-7xl mx-auto p-6">
+                    <h1 class="text-3xl font-bold mb-6">Car Scanner Pro</h1>
+                    <p class="mb-6">Total Vehicles: <strong>${vehicles.length}</strong></p>
+                    ${vehicles.map(v => `
+                        <div class="bg-white p-6 rounded shadow mb-4">
+                            <h3 class="text-xl font-bold">${v.title}</h3>
+                            <p>Price: £${v.advertised_price}</p>
+                            <p>Mileage: ${v.mileage} miles</p>
+                            <p>Year: ${v.year}</p>
+                            <p>Source: ${v.source}</p>
+                            <p>Est Retail: £${v.estimated_retail}</p>
+                            <p>Profit Margin: ${v.profit_margin ? v.profit_margin.toFixed(1) + '%' : 'N/A'}</p>
+                            <p>Days to Sell: ${v.days_to_sell}</p>
                         </div>
-                        <div class="bg-white p-6 rounded shadow">
-                            <p class="text-sm text-gray-600 font-medium">AVG PROFIT MARGIN</p>
-                            <p class="text-4xl font-bold text-green-600 mt-2">${(vehicles.reduce((sum, v) => sum + (v.profit_margin || 0), 0) / vehicles.length).toFixed(1)}%</p>
-                        </div>
-                    </div>
-                    
-                    <div class="space-y-4">
-                        ${vehicles.slice(0, 50).map((v) => `
-                            <div class="bg-white rounded shadow hover:shadow-lg transition">
-                                <div class="border-l-4 border-blue-600 p-6">
-                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                        <div>
-                                            <h3 class="text-xl font-bold text-gray-900">${v.title}</h3>
-                                            <p class="text-sm text-gray-500 mt-2">📍 ${v.source}</p>
-                                            <p class="text-sm text-gray-500">🚗 ${(v.mileage || 0).toLocaleString()} miles</p>
-                                            <p class="text-sm text-gray-500">📅 ${v.year}</p>
-                                        </div>
-                                        
-                                        <div>
-                                            <p class="text-xs text-gray-500 font-semibold uppercase">Advertised Price</p>
-                                            <p class="text-3xl font-bold text-blue-600 mt-1">£${(v.advertised_price || 0).toLocaleString('en-GB', {maximumFractionDigits: 0})}</p>
-                                        </div>
-                                        
-                                        <div>
-                                            <p class="text-xs text-gray-500 font-semibold uppercase">Est. Retail</p>
-                                            <p class="text-3xl font-bold text-green-600 mt-1">£${(v.estimated_retail || 0).toLocaleString('en-GB', {maximumFractionDigits: 0})}</p>
-                                        </div>
-                                        
-                                        <div>
-                                            <p class="text-xs text-gray-500 font-semibold uppercase">Profit Margin</p>
-                                            <p class="text-3xl font-bold ${v.profit_margin > 10 ? 'text-green-600' : v.profit_margin > 5 ? 'text-blue-600' : 'text-orange-600'} mt-1">${v.profit_margin ? v.profit_margin.toFixed(1) + '%' : 'N/A'}</p>
-                                            <p class="text-xs text-gray-500 mt-2">⏱️ ${v.days_to_sell || '28'} days</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                    
-                    ${vehicles.length > 50 ? `<p class="text-center text-gray-500 mt-8">Showing 50 of ${vehicles.length} vehicles</p>` : ''}
+                    `).join('')}
                 </div>
             `;
             document.getElementById('app').innerHTML = html;
         }
         
-        // Load on page open
         loadVehicles();
-        
-        // Refresh every 5 minutes
-        setInterval(loadVehicles, 300000);
     </script>
 </body>
 </html>
