@@ -4,49 +4,40 @@
     <title>Car Scanner Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <div id="app" class="p-6"></div>
+<body onload="loadData()">
+    <div class="max-w-7xl mx-auto p-6">
+        <h1 class="text-4xl font-bold mb-4">Car Scanner Pro</h1>
+        <div id="content">Loading vehicles...</div>
+    </div>
     
     <script>
-        const API_URL = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://58b8bf13-f744-43b1-9853-e9b0085a37f3-00-17alqxf50v7s7.picard.replit.dev');
-        
-        async function loadVehicles() {
-            try {
-                const response = await fetch(API_URL + '%2Fapi%2Fvehicles');
-                const data = await response.json();
-                const vehicles = JSON.parse(data.contents);
-                
-                if (vehicles.success) {
-                    displayVehicles(vehicles.vehicles);
-                } else {
-                    document.getElementById('app').innerHTML = '<p>Error: ' + vehicles.error + '</p>';
-                }
-            } catch (error) {
-                document.getElementById('app').innerHTML = '<p>Connection Error: Backend may be offline</p>';
-            }
-        }
-        
-        function displayVehicles(vehicles) {
-            const html = `
-                <div class="max-w-7xl mx-auto">
-                    <h1 class="text-4xl font-bold mb-2">Car Scanner Pro</h1>
-                    <p class="text-gray-600 mb-6">Found <strong>${vehicles.length}</strong> vehicles</p>
+        function loadData() {
+            fetch('https://api.allorigins.win/get?url=https%3A%2F%2F58b8bf13-f744-43b1-9853-e9b0085a37f3-00-17alqxf50v7s7.picard.replit.dev%2Fapi%2Fvehicles')
+                .then(r => r.json())
+                .then(d => {
+                    const vehicles = JSON.parse(d.contents);
+                    let html = '<p class="mb-6">Found ' + vehicles.vehicles.length + ' vehicles</p>';
                     
-                    ${vehicles.map((v, i) => `
-                        <div class="bg-white p-6 rounded shadow mb-4 border-l-4 border-blue-600">
-                            <div class="grid grid-cols-3 gap-6">
-                                <div>
-                                    <h3 class="text-xl font-bold text-gray-900">${v.title}</h3>
-                                    <p class="text-sm text-gray-600 mt-2">📍 ${v.source}</p>
-                                    <p class="text-sm text-gray-600">🚗 ${v.mileage?.toLocaleString() || 0} miles</p>
-                                    <p class="text-sm text-gray-600">📅 ${v.year}</p>
-                                </div>
-                                <div>
-                                    <p class="text-xs text-gray-500 mb-1">ADVERTISED PRICE</p>
-                                    <p class="text-3xl font-bold text-blue-600">£${(v.advertised_price || 0).toLocaleString()}</p>
-                                </div>
-                                <div>
-                                    <p class="text-xs text-gray-500 mb-1">EST. RETAIL PRICE</p>
-                                    <p class="text-2xl font-bold text-green-600">£${(v.estimated_retail || 0).toLocaleString()}</p>
-                                    <p class="text-xs text-gray-500 mt-2">PROFIT MARGIN</p>
-                                    <p class="
+                    vehicles.vehicles.forEach(v => {
+                        html += '<div class="bg-white p-6 rounded shadow mb-4"><h3 class="font-bold text-lg">' + v.title + '</h3>';
+                        html += '<p>£' + v.advertised_price + ' | ' + v.mileage + ' miles | ' + v.source + '</p>';
+                        html += '<p>Est: £' + v.estimated_retail + ' | Profit: ' + (v.profit_margin ? v.profit_margin.toFixed(1) + '%' : 'N/A') + '</p></div>';
+                    });
+                    
+                    document.getElementById('content').innerHTML = html;
+                })
+                .catch(e => {
+                    document.getElementById('content').innerHTML = 'Error loading data';
+                    console.error(e);
+                });
+        }
+    </script>
+</body>
+</html>
+```
+
+**Commit changes**
+
+Wait 1-2 minutes, then refresh:
+```
+https://car-scanner-dashboard-e8ow.vercel.app
